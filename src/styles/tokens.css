@@ -1,0 +1,6 @@
+/* src/styles/tokens.css */
+:root{
+  --brand:#059669;  /* emerald-600 */
+  --warn:#f59e0b;   /* amber-500 */
+  --danger:#ef4444; /* red-500 */
+}

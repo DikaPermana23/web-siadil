@@ -1,0 +1,7 @@
+/* src/styles/app-shell.css */
+.app-grid{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.app-sidebar{background:#fff;border-right:1px solid #e5e7eb;padding:16px;position:sticky;top:0;height:100vh}
+.app-main{display:flex;flex-direction:column;min-width:0}
+.app-navbar{position:sticky;top:0;background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 20px;z-index:20}
+.app-content{padding:20px;min-width:0}
+.card-panel { border-radius: 12px; border: 1px solid #e5e7eb; padding: 12px; }
