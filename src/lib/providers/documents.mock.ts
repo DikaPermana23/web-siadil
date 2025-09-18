@@ -1,6 +1,12 @@
+// src/lib/providers/documents.mock.ts
 import type { DocumentItem } from "@/domain/documents/model/types";
 
-export type DocSortKey = "id" | "number" | "title" | "documentDate" | "archiveName";
+export type DocSortKey =
+  | "id"
+  | "number"
+  | "title"
+  | "documentDate"
+  | "archiveName";
 export type DocSortDir = "asc" | "desc";
 
 export type GetDocumentsOptions = {
@@ -44,7 +50,7 @@ function toEndOfDay(s?: string): Date | null {
   const t = new Date(`${s}T23:59:59`);
   return Number.isNaN(t.getTime()) ? null : t;
 }
-function toNoon(s: string): Date | null {
+function toNoon(s?: string): Date | null {
   if (!s) return null;
   const t = new Date(`${s}T12:00:00`);
   return Number.isNaN(t.getTime()) ? null : t;
@@ -78,7 +84,8 @@ function seedBase(): DocumentItem[] {
       id: "75353",
       number: "JAJAPDRIVER",
       title: "JAJAPDRIVER",
-      description: "Aplikasi Jajap untuk Request Transformasi Area Kawasan Kujang",
+      description:
+        "Aplikasi Jajap untuk Request Transformasi Area Kawasan Kujang",
       documentDate: "2024-08-22",
       contributors: ["Dokumentasi Aplikasi"],
       archiveId: "1",
@@ -89,7 +96,8 @@ function seedBase(): DocumentItem[] {
       id: "75352",
       number: "APM",
       title: "APM",
-      description: "Aplikasi Performance Monitoring Management untuk Generate Montly Report",
+      description:
+        "Aplikasi Performance Monitoring Management untuk Generate Montly Report",
       documentDate: "2024-08-22",
       contributors: ["Dokumentasi Aplikasi"],
       archiveId: "1",
@@ -100,7 +108,8 @@ function seedBase(): DocumentItem[] {
       id: "75351",
       number: "WEBKUJANGADMIN",
       title: "WEBKUJANGADMIN",
-      description: "Aplikasi Panel Admin untuk Pengelolaan Website Pupuk Kujang",
+      description:
+        "Aplikasi Panel Admin untuk Pengelolaan Website Pupuk Kujang",
       documentDate: "2024-08-22",
       contributors: ["Dokumentasi Aplikasi"],
       archiveId: "1",
@@ -163,7 +172,9 @@ function ensureCache(): DocumentItem[] {
   return CACHE!;
 }
 
-export async function getDocuments(opts: GetDocumentsOptions = {}): Promise<GetDocumentsResult> {
+export async function getDocuments(
+  opts: GetDocumentsOptions = {}
+): Promise<GetDocumentsResult> {
   const {
     page = 1,
     perPage = 10,
@@ -184,13 +195,23 @@ export async function getDocuments(opts: GetDocumentsOptions = {}): Promise<GetD
   if (q && q.trim()) {
     const needle = lo(q);
     filtered = filtered.filter((d) =>
-      [lo(d.number), lo(d.title), lo(d.description)].some((s) => s.includes(needle))
+      [lo(d.number), lo(d.title), lo(d.description)].some((s) =>
+        s.includes(needle)
+      )
     );
   }
 
+  // 👇 FIX: narrow dulu agar Set<string> tidak menerima undefined,
+  // lalu hanya cocokkan dokumen yang punya archiveId valid.
   if (archiveIds && archiveIds.length > 0) {
-    const set = new Set<string>(archiveIds);
-    filtered = filtered.filter((d) => set.has(d.archiveId));
+    const set = new Set<string>(
+      archiveIds.filter(
+        (x): x is string => typeof x === "string" && x.length > 0
+      )
+    );
+    filtered = filtered.filter(
+      (d) => typeof d.archiveId === "string" && set.has(d.archiveId)
+    );
   }
 
   if (contributors && contributors.length > 0) {
@@ -205,7 +226,7 @@ export async function getDocuments(opts: GetDocumentsOptions = {}): Promise<GetD
     const to = toEndOfDay(dateTo);
 
     filtered = filtered.filter((d) => {
-      const t = toNoon(d.documentDate ?? "");
+      const t = toNoon(d.documentDate);
       if (!t) return false;
       if (from && t < from) return false;
       if (to && t > to) return false;
