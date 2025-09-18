@@ -1,10 +1,8 @@
-// src/components/common/table/Pagination.tsx
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import type { Route } from "next";
 
-/** Membuat daftar nomor halaman dgn elipsis */
+/** Buat daftar nomor halaman dengan elipsis */
 function buildPager(current: number, total: number, delta = 1): (number | "…")[] {
   if (total <= 0) return [];
   const set = new Set<number>([1, total]);
@@ -21,13 +19,9 @@ function buildPager(current: number, total: number, delta = 1): (number | "…")
 type Props = {
   page: number;
   totalPages: number;
-  /** Total seluruh baris (opsional, untuk “Showing … of …”) */
   totalRows?: number;
-  /** Jumlah baris aktual di halaman saat ini (opsional; membantu saat totalRows tidak ada) */
   currentCount?: number;
-  /** Opsi page size pada dropdown */
   pageSizeOptions?: number[];
-  /** Default page size jika tidak ada di query */
   defaultPageSize?: number;
 };
 
@@ -43,28 +37,35 @@ export default function Pagination({
   const params = useSearchParams();
   const pathname = usePathname();
 
-  const spFromParams = () => new URLSearchParams(params.toString());
+  const cloneParams = () => new URLSearchParams(params.toString());
 
-  // ambil pageSize dari query (?limit=), fallback ke ?pageSize=, lalu default
-  const pageSizeFromQuery =
-    Number(params.get("limit") ?? params.get("pageSize")) || defaultPageSize;
-  const pageSize = pageSizeFromQuery > 0 ? pageSizeFromQuery : defaultPageSize;
+  // Baca page size dari beberapa alias (perPage | limit | pageSize)
+  const raw =
+    params.get("perPage") ??
+    params.get("limit") ??
+    params.get("pageSize") ??
+    String(defaultPageSize);
+  const pageSize = Math.max(1, Number(raw) || defaultPageSize);
 
   const pushQuery = (next: URLSearchParams) => {
-    const href = `${pathname}?${next.toString()}` as Route; // typedRoutes-safe
-    router.push(href);
+    for (const [k, v] of Array.from(next.entries())) if (!v) next.delete(k);
+    const href = `${pathname}?${next.toString()}`;
+    // Proyekmu memakai typed routes; karena href dinamis, cast aman:
+    router.push(href as never);
   };
 
   const go = (p: number) => {
-    const sp = spFromParams();
+    if (p < 1 || (totalPages > 0 && p > totalPages) || p === page) return;
+    const sp = cloneParams();
     sp.set("page", String(p));
     pushQuery(sp);
   };
 
   const changePageSize = (size: number) => {
-    const sp = spFromParams();
-    sp.set("limit", String(size));
-    sp.delete("page"); // balik ke page 1
+    const sp = cloneParams();
+    sp.set("perPage", String(size));
+    sp.set("limit", String(size)); // kompat untuk alias lama
+    sp.delete("page"); // kembali ke page 1
     pushQuery(sp);
   };
 
@@ -79,7 +80,6 @@ export default function Pagination({
       end = Math.min(page * pageSize, totalRows);
     }
   } else if (currentCount != null) {
-    // fallback jika tidak ada totalRows: gunakan count saat ini
     start = currentCount > 0 ? (page - 1) * pageSize + 1 : 0;
     end = currentCount > 0 ? start + currentCount - 1 : 0;
     total = currentCount;

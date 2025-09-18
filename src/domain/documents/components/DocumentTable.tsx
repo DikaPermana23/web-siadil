@@ -35,7 +35,7 @@ const IconHide = (p: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-/* ========== Sorting helpers (tanpa instanceof) ========== */
+/* ========== Sorting helpers ========== */
 type SortDir = "asc" | "desc";
 type SortableKey = "id" | "title" | "documentDate" | "archiveName" | "updatedBy";
 type SortState = { key?: SortableKey; dir: SortDir };
@@ -84,8 +84,6 @@ function SortHeader({
 
   const isThis = currentSort.key === colKey;
   const isDesc = isThis && currentSort.dir === "desc";
-
-  // pilih ikon sesuai status: asc/desc/netral
   const Icon = !isThis ? IconSort : isDesc ? IconDesc : IconAsc;
 
   const iconClasses = [
@@ -175,7 +173,6 @@ export default function DocumentTable({
   const openMenu = useCallback(
     (col: string, anchorEl: HTMLElement) => {
       setMenu((m) => {
-        // toggle kalau klik ikon yg sama
         if (m.open && m.anchor === anchorEl) return { ...m, open: false };
         const pos = computeMenuPos(anchorEl, menuPlacement);
         return { open: true, col, anchor: anchorEl, top: pos.top, left: pos.left };
@@ -292,7 +289,7 @@ export default function DocumentTable({
           "[&_tr:hover]:shadow-none",
           "[&_tbody_tr:hover]:bg-neutral-50",
           "dark:[&_tbody_tr:hover]:bg-neutral-800/50",
-          "[&_thead_th>svg]:hidden", // sembunyikan caret default, kita pakai ikon sendiri
+          "[&_thead_th>svg]:hidden",
         ].join(" ")}
       >
         <DataTable<DocumentItem> columns={visibleColumns} rows={sortedRows} />
@@ -335,7 +332,13 @@ export default function DocumentTable({
         )
       }
 
-      <Pagination page={meta.page} totalPages={meta.totalPages} />
+      {/* Pagination: kirim totalRows & currentCount supaya "Showing …" sinkron */}
+      <Pagination
+        page={meta.page}
+        totalPages={meta.totalPages}
+        totalRows={meta.totalItems ?? sortedRows.length}
+        currentCount={sortedRows.length}
+      />
     </div>
   );
 }

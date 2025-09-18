@@ -31,7 +31,6 @@ if (!host || !user || !db) {
 
 if (process.env.DEBUG_DB === "1") {
   // log sekali, tanpa password
-  // eslint-disable-next-line no-console
   console.log("[DB] connecting", {
     host,
     port,

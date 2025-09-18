@@ -15,7 +15,16 @@ import CreateArchiveCard from "@/components/dashboard/CreateArchiveCard";
 // Panel dokumen
 import DocumentsPanel from "@/domain/documents/components/DocumentsPanel";
 
-export default async function DashboardPage() {
+// Provider mock (search/sort/filter/paginate)
+import { getDocuments } from "@/lib/providers/documents.mock";
+
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   const data = (await getDashboardData()) as DashboardData;
 
   const today = new Date(data.lastUpdated ?? Date.now()).toLocaleDateString("id-ID", {
@@ -25,6 +34,52 @@ export default async function DashboardPage() {
   });
 
   const firstArchive = data.archives?.[0];
+
+  // ====== Query dari URL ======
+  const rawPage = Number(searchParams?.page ?? 1);
+  const rawPerPage = Number(
+    (searchParams?.perPage as string | undefined) ??
+      (searchParams?.limit as string | undefined) ??
+      (searchParams?.pageSize as string | undefined) ??
+      10
+  );
+
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+  const perPage = Number.isFinite(rawPerPage) && rawPerPage > 0 ? rawPerPage : 10;
+
+  const q = typeof searchParams?.q === "string" ? searchParams.q : undefined;
+  const archiveIds =
+    typeof searchParams?.archiveIds === "string"
+      ? searchParams.archiveIds.split(",").filter(Boolean)
+      : undefined;
+
+  // ====== Ambil dokumen ======
+  let { items, totalItems, totalPages } = await getDocuments({
+    page,
+    perPage,
+    q,
+    archiveIds,
+    sortBy: "documentDate",
+    sortDir: "desc",
+  });
+
+  // Clamp halaman bila page > totalPages (mis. setelah filter)
+  if (totalPages > 0 && page > totalPages) {
+    const res2 = await getDocuments({
+      page: totalPages,
+      perPage,
+      q,
+      archiveIds,
+      sortBy: "documentDate",
+      sortDir: "desc",
+    });
+    items = res2.items;
+    totalItems = res2.totalItems;
+    totalPages = res2.totalPages;
+  }
+
+  // DocumentsPanel expects ArchiveOption[] = { id, name }
+  const archiveOptions = (data.archives ?? []).map((a) => ({ id: a.id, name: a.name }));
 
   return (
     <div className="space-y-8">
@@ -49,20 +104,21 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Kartu Atas: kiri lebar, kanan fixed 320px */}
+      {/* Kartu Atas */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr,320px] lg:justify-items-end">
-        {/* Kiri: Archives */}
         <div className="space-y-3 justify-self-stretch">
           <Section title="Archives">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <GreenStatCard value={data.totalDocs} label="Total Dokumen" sub={`Per ${today}`} />
-              <GreenArchiveCard title={firstArchive ? firstArchive.name : "—"} subtitle={firstArchive?.alias ?? ""} />
+              <GreenStatCard value={totalItems} label="Total Dokumen" sub={`Per ${today}`} />
+              <GreenArchiveCard
+                title={firstArchive ? firstArchive.name : "—"}
+                subtitle={firstArchive?.alias ?? ""}
+              />
               <CreateArchiveCard />
             </div>
           </Section>
         </div>
 
-        {/* Kanan: Reminders */}
         <aside className="ml-auto w-full max-w-[300px] justify-self-end space-y-3 lg:sticky lg:top-20">
           <Section title="Reminders">
             <div className="grid grid-cols-1 gap-2">
@@ -79,14 +135,11 @@ export default async function DashboardPage() {
       </div>
 
       {/* Dokumen */}
-      <Section
-        title="Dokumen"
-        titleClassName="translate-y-[40px] leading-none" // geser judul sedikit ke bawah
-      >
+      <Section title="Dokumen" titleClassName="translate-y-[40px] leading-none">
         <DocumentsPanel
-          items={[]}
-          archives={data.archives}
-          meta={{ page: 1, totalPages: 1 }}
+          items={items}
+          archives={archiveOptions}
+          meta={{ page: Math.min(page, totalPages || 1), totalPages, totalItems }}
           emptyHint="Belum ada data untuk filter/pencarian ini. Tambahkan dokumen atau ubah filter."
         />
       </Section>

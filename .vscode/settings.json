@@ -1,8 +1,27 @@
 {
+  // Hilangkan warning "Unknown at rule @tailwind"
   "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+
+  // Pastikan ekstensi Tailwind membaca config TS-mu di root
   "tailwindCSS.experimental.configFile": "tailwind.config.ts",
+
+  // Aktifkan saran class di dalam string
+  "editor.quickSuggestions": { "strings": true },
+  "editor.suggest.snippetsPreventQuickSuggestions": false,
+
+  // Bantu ekstensi mengenali file TSX/JSX sebagai dokumen HTML untuk className
   "tailwindCSS.includeLanguages": {
     "typescript": "javascript",
-    "typescriptreact": "javascript"
-  }
+    "typescriptreact": "html",
+    "javascriptreact": "html"
+  },
+
+  // Paksa file .css diparse dengan mode Tailwind (opsional tapi membantu)
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+
+  // (Opsional) Emmet untuk class Tailwind
+  "tailwindCSS.emmetCompletions": true
 }
